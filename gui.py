@@ -329,6 +329,7 @@ class MainWindow(QMainWindow):
         self.is_autostart = '-autostart' in sys.argv
         
         self.init_ui()
+        self.init_server_combo()  # 初始化下拉框
         self.load_server_config()
         
         if self.is_autostart:
@@ -420,6 +421,30 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel(label_text))
         layout.addWidget(edit_widget)
         return widget
+    
+    def init_server_combo(self):
+        """初始化服务器下拉框（首次加载）"""
+        # 暂时断开信号，避免触发 on_server_changed
+        try:
+            self.server_combo.currentIndexChanged.disconnect()
+        except:
+            pass
+        
+        self.server_combo.clear()
+        sorted_servers = sorted(self.config_manager.servers, key=lambda x: x['name'])
+        for server in sorted_servers:
+            self.server_combo.addItem(server['name'], server['id'])
+        
+        # 选中当前服务器
+        current = self.config_manager.get_current_server()
+        if current:
+            for i in range(self.server_combo.count()):
+                if self.server_combo.itemData(i) == current['id']:
+                    self.server_combo.setCurrentIndex(i)
+                    break
+        
+        # 重新连接信号
+        self.server_combo.currentIndexChanged.connect(self.on_server_changed)
     
     def load_server_config(self):
         """加载服务器配置"""
